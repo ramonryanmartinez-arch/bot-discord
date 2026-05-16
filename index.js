@@ -3,8 +3,6 @@ const fs = require("fs");
 const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
 
 const pets = require("./pets");
-const mutacoesPele = require("./data/mutacoesPele");
-const mutacoesCorpo = require("./data/mutacoesCorpo");
 
 // =========================
 // 📦 DATABASE
@@ -22,19 +20,18 @@ function saveDB(db) {
 }
 
 // =========================
-// 💰 VALOR PET
+// 🧬 MUTAÇÕES CORPO
+// =========================
+
+const mutacoesCorpo = require("./data/mutacoesCorpo");
+
+// =========================
+// 💰 VALOR DO PET
 // =========================
 
 function getPetValue(nomeCompleto) {
   let nome = nomeCompleto.toLowerCase();
   let mult = 1;
-
-  for (let m in mutacoesPele) {
-    if (nome.includes(m)) {
-      mult *= mutacoesPele[m];
-      nome = nome.replace(m, "").trim();
-    }
-  }
 
   for (let m in mutacoesCorpo) {
     if (nome.includes(m)) {
@@ -58,7 +55,7 @@ app.get("/", (req, res) => res.send("Bot online"));
 app.listen(process.env.PORT || 3000);
 
 // =========================
-// 🤖 DISCORD
+// 🤖 DISCORD BOT
 // =========================
 
 const client = new Client({
@@ -112,6 +109,10 @@ client.on("messageCreate", async (message) => {
       return message.reply("❌ Você não tem esse pet.");
     }
 
+    if (db[message.author.id][pet] < qtd) {
+      return message.reply(`❌ Você só tem ${db[message.author.id][pet]}x ${pet}`);
+    }
+
     db[message.author.id][pet] -= qtd;
 
     if (db[message.author.id][pet] <= 0) {
@@ -123,11 +124,9 @@ client.on("messageCreate", async (message) => {
     return message.reply(`🗑️ Removido ${qtd}x ${pet}`);
   }
 
-  // 🔎 PROCURAR
+  // 🔎 PROCURAR PET
   if (message.content.startsWith("/procurar")) {
     const pet = message.content.split(" ").slice(1).join(" ").toLowerCase();
-
-    if (!pet) return message.reply("Use: /procurar nome");
 
     let result = [];
 
@@ -141,7 +140,7 @@ client.on("messageCreate", async (message) => {
       return message.reply("❌ Ninguém possui esse pet.");
     }
 
-    return message.reply(`🔎 **${pet}**\n\n` + result.join("\n"));
+    return message.reply(`🔎 ${pet}\n\n` + result.join("\n"));
   }
 
   // 📦 MEUS PETS
@@ -189,7 +188,7 @@ client.on("messageCreate", async (message) => {
     const media = (t1 + t2) / 2;
     const percent = diff / media;
 
-    let resultado = "";
+    let resultado;
 
     if (percent <= 0.05) resultado = "⚖️ justa";
     else if (percent <= 0.15) resultado = t2 > t1 ? "🟠 Ganha um pouco" : "🔴 Perde um pouco";
