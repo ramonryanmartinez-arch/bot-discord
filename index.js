@@ -1,8 +1,10 @@
 const express = require("express");
 const { Client, GatewayIntentBits } = require("discord.js");
 
+// 🐾 IMPORTA OS PETS
 const pets = require("./pets");
 
+// 🌐 SERVIDOR EXPRESS (OBRIGATÓRIO NO RENDER)
 const app = express();
 
 const PORT = process.env.PORT || 3000;
@@ -15,6 +17,7 @@ app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
 
+// 🤖 CLIENTE DISCORD
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -23,10 +26,12 @@ const client = new Client({
   ]
 });
 
+// 🧠 PEGA VALOR DO PET
 function getPetValue(name) {
   return pets[name.toLowerCase().trim()] || -1;
 }
 
+// 📩 MENSAGENS
 client.on("messageCreate", (message) => {
 
   if (message.author.bot) return;
@@ -56,9 +61,10 @@ client.on("messageCreate", (message) => {
     let total1 = 0;
     let total2 = 0;
 
+    // SOMA LADO 1
     for (let p of lado1) {
 
-      let valor = getPetValue(p);
+      const valor = getPetValue(p);
 
       if (valor === -1) {
         return message.reply(`❌ Pet não encontrado: ${p}`);
@@ -67,9 +73,10 @@ client.on("messageCreate", (message) => {
       total1 += valor;
     }
 
+    // SOMA LADO 2
     for (let p of lado2) {
 
-      let valor = getPetValue(p);
+      const valor = getPetValue(p);
 
       if (valor === -1) {
         return message.reply(`❌ Pet não encontrado: ${p}`);
@@ -78,6 +85,7 @@ client.on("messageCreate", (message) => {
       total2 += valor;
     }
 
+    // RESULTADO
     let resultado =
       total2 > total1
         ? "WIN 🟢"
@@ -114,8 +122,10 @@ client.on("messageCreate", (message) => {
 
 });
 
+// 🤖 ONLINE
 client.once("clientReady", () => {
   console.log(`Bot online como ${client.user.tag}`);
 });
 
+// 🔑 LOGIN
 client.login(process.env.DISCORD_TOKEN);
