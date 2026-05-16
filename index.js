@@ -2,8 +2,9 @@ const express = require("express");
 const fs = require("fs");
 const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
 
-// 🐾 PETS
 const pets = require("./pets");
+const mutacoesPele = require("./data/mutacoesPele");
+const mutacoesCorpo = require("./data/mutacoesCorpo");
 
 // =========================
 // 📦 DATABASE
@@ -21,93 +22,7 @@ function saveDB(db) {
 }
 
 // =========================
-// 🧬 MUTAÇÕES PELE
-// =========================
-
-const mutacoesPele = {
-  bloodroot: 2,
-  candy: 3,
-  lava: 6,
-  galaxy: 7,
-  radioativa: 7.5,
-  "ying yang": 8.5,
-  cursed: 9.5,
-  divina: 10,
-  cyber: 11,
-  gold: 1.25,
-  diamante: 1.75,
-  rainbow: 10
-};
-
-// =========================
-// 🎭 MUTAÇÕES CORPO (COMPLETO)
-// =========================
-
-const mutacoesCorpo = {
-
-  "morango": 9,
-  "meowl": 8,
-  "john pork": 7.5,
-  "skibidi": 7,
-  "rena": 6,
-  "chocolate": 5.5,
-  "26": 6,
-  "halo": 6,
-  "sorte": 6,
-  "abóbora pet": 5.5,
-  "orelhas de coelho": 5.5,
-  "gorro de papai noel": 5,
-  "lápide rip": 4.5,
-  "hora da bruxa": 4,
-  "esqueleto": 4,
-  "10b": 4,
-  "balão laranja": 4,
-  "balão verde": 4.5,
-  "balão azul": 5,
-  "balão vermelho": 6,
-  "balão rosa": 6.5,
-  "balão arco-íris": 7.5,
-  "ovo laranja": 4,
-  "ovo verde": 5,
-  "ovo azul": 5.5,
-  "ovo rosa": 7.5,
-  "paint": 6,
-  "pintura": 6,
-  ":3": 5.5,
-  "gravata": 4.75,
-  "aranha": 4.5,
-  "chapéu matteo": 4.5,
-  "galáctico": 4,
-  "explosivo": 4,
-  "barbatana de tubarão": 4,
-  "brasil": 6,
-  "indonésia": 5,
-  "sombrero": 5,
-  "vovó": 6.5,
-  "fogo": 6,
-  "rosas": 6,
-  "fogos de artifício": 6,
-  "nyan": 6,
-  "relâmpago": 6,
-  "disco": 5,
-  "glitchado": 5,
-
-  "garra de caranguejo": 0.75,
-  "taco": 0.75,
-
-  "zumbi": 5,
-  "chiclete": 4,
-  "bubblegum": 4,
-  "ovni": 3,
-  "sonolento": 0.5,
-  "atingido por cometa": 3.5,
-  "neve": 3,
-  "molhado": 2.5
-
-};
-
-// =========================
-// 💰 VALOR DO PET
+// 💰 VALOR PET
 // =========================
 
 function getPetValue(nomeCompleto) {
@@ -212,6 +127,8 @@ client.on("messageCreate", async (message) => {
   if (message.content.startsWith("/procurar")) {
     const pet = message.content.split(" ").slice(1).join(" ").toLowerCase();
 
+    if (!pet) return message.reply("Use: /procurar nome");
+
     let result = [];
 
     for (let user in db) {
@@ -224,7 +141,7 @@ client.on("messageCreate", async (message) => {
       return message.reply("❌ Ninguém possui esse pet.");
     }
 
-    return message.reply(`🔎 ${pet}\n\n` + result.join("\n"));
+    return message.reply(`🔎 **${pet}**\n\n` + result.join("\n"));
   }
 
   // 📦 MEUS PETS
@@ -245,6 +162,10 @@ client.on("messageCreate", async (message) => {
   // 📊 AVALIAR TRADE
   if (message.content.startsWith("/avaliar")) {
     const parts = message.content.replace("/avaliar", "").trim().split(" vs ");
+
+    if (parts.length !== 2) {
+      return message.reply("Use: /avaliar pet + pet vs pet + pet");
+    }
 
     const lado1 = parts[0].split("+").map(p => p.trim());
     const lado2 = parts[1].split("+").map(p => p.trim());
@@ -270,13 +191,9 @@ client.on("messageCreate", async (message) => {
 
     let resultado = "";
 
-    if (percent <= 0.05) {
-      resultado = "⚖️ justa";
-    } else if (percent <= 0.15) {
-      resultado = t2 > t1 ? "🟠 Ganha um pouco" : "🔴 Perde um pouco";
-    } else {
-      resultado = t2 > t1 ? "❌️ Você sai ganhando" : "❌️ Você sai perdendo";
-    }
+    if (percent <= 0.05) resultado = "⚖️ justa";
+    else if (percent <= 0.15) resultado = t2 > t1 ? "🟠 Ganha um pouco" : "🔴 Perde um pouco";
+    else resultado = t2 > t1 ? "❌ Você sai ganhando" : "❌ Você sai perdendo";
 
     const embed = new EmbedBuilder()
       .setTitle("📊 TRADE")
