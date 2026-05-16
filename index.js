@@ -21,7 +21,7 @@ function saveDB(db) {
 }
 
 // =========================
-// 🧬 MUTAÇÕES DE PELE
+// 🧬 MUTAÇÕES PELE
 // =========================
 
 const mutacoesPele = {
@@ -40,7 +40,7 @@ const mutacoesPele = {
 };
 
 // =========================
-// 🎭 MUTAÇÕES DE CORPO (COMPLETA)
+// 🎭 MUTAÇÕES CORPO (COMPLETO)
 // =========================
 
 const mutacoesCorpo = {
@@ -107,7 +107,7 @@ const mutacoesCorpo = {
 };
 
 // =========================
-// 💰 CALCULO DE VALOR
+// 💰 VALOR DO PET
 // =========================
 
 function getPetValue(nomeCompleto) {
@@ -143,7 +143,7 @@ app.get("/", (req, res) => res.send("Bot online"));
 app.listen(process.env.PORT || 3000);
 
 // =========================
-// 🤖 DISCORD BOT
+// 🤖 DISCORD
 // =========================
 
 const client = new Client({
@@ -170,7 +170,6 @@ client.on("messageCreate", async (message) => {
   // 📦 ADD PET
   if (message.content.startsWith("/addpet")) {
     const args = message.content.split(" ").slice(1);
-
     const pet = args[0]?.toLowerCase();
     const qtd = parseInt(args[1] || "1");
 
@@ -186,25 +185,46 @@ client.on("messageCreate", async (message) => {
     return message.reply(`✅ Adicionado ${qtd}x ${pet}`);
   }
 
+  // 🗑️ REMOVE PET
+  if (message.content.startsWith("/removepet")) {
+    const args = message.content.split(" ").slice(1);
+    const pet = args[0]?.toLowerCase();
+    const qtd = parseInt(args[1] || "1");
+
+    if (!pet) return message.reply("Use: /removepet nome quantidade");
+
+    if (!db[message.author.id] || !db[message.author.id][pet]) {
+      return message.reply("❌ Você não tem esse pet.");
+    }
+
+    db[message.author.id][pet] -= qtd;
+
+    if (db[message.author.id][pet] <= 0) {
+      delete db[message.author.id][pet];
+    }
+
+    saveDB(db);
+
+    return message.reply(`🗑️ Removido ${qtd}x ${pet}`);
+  }
+
   // 🔎 PROCURAR
   if (message.content.startsWith("/procurar")) {
     const pet = message.content.split(" ").slice(1).join(" ").toLowerCase();
 
-    if (!pet) return message.reply("Use: /procurar nome");
-
-    let encontrados = [];
+    let result = [];
 
     for (let user in db) {
       if (db[user][pet]) {
-        encontrados.push(`👤 <@${user}> → ${db[user][pet]}x`);
+        result.push(`👤 <@${user}> → ${db[user][pet]}x`);
       }
     }
 
-    if (encontrados.length === 0) {
+    if (result.length === 0) {
       return message.reply("❌ Ninguém possui esse pet.");
     }
 
-    return message.reply(`🔎 **${pet}**\n\n` + encontrados.join("\n"));
+    return message.reply(`🔎 ${pet}\n\n` + result.join("\n"));
   }
 
   // 📦 MEUS PETS
@@ -222,13 +242,9 @@ client.on("messageCreate", async (message) => {
     return message.reply(text);
   }
 
-  // 📊 AVALIAR
+  // 📊 AVALIAR TRADE
   if (message.content.startsWith("/avaliar")) {
     const parts = message.content.replace("/avaliar", "").trim().split(" vs ");
-
-    if (parts.length !== 2) {
-      return message.reply("Use: /avaliar pet + pet vs pet + pet");
-    }
 
     const lado1 = parts[0].split("+").map(p => p.trim());
     const lado2 = parts[1].split("+").map(p => p.trim());
@@ -238,13 +254,13 @@ client.on("messageCreate", async (message) => {
 
     for (let p of lado1) {
       const v = getPetValue(p);
-      if (v === -1) return message.reply(`❌ Não existe: ${p}`);
+      if (v === -1) return message.reply(`❌ ${p} não existe`);
       t1 += v;
     }
 
     for (let p of lado2) {
       const v = getPetValue(p);
-      if (v === -1) return message.reply(`❌ Não existe: ${p}`);
+      if (v === -1) return message.reply(`❌ ${p} não existe`);
       t2 += v;
     }
 
@@ -263,11 +279,11 @@ client.on("messageCreate", async (message) => {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle("📊 Trade Result")
+      .setTitle("📊 TRADE")
       .addFields(
-        { name: "Seu lado", value: `${parts[0]}\n💰 ${t1}`, inline: false },
-        { name: "Outro lado", value: `${parts[1]}\n💰 ${t2}`, inline: false },
-        { name: "Resultado", value: resultado, inline: false }
+        { name: "Seu lado", value: `${parts[0]}\n💰 ${t1}` },
+        { name: "Outro lado", value: `${parts[1]}\n💰 ${t2}` },
+        { name: "Resultado", value: resultado }
       )
       .setColor(0x00bfff);
 
@@ -282,9 +298,9 @@ client.on("messageCreate", async (message) => {
 
     let text = "📊 TOP PETS\n\n";
 
-    top.forEach((p, i) => {
-      text += `${i + 1}. ${p[0]} → ${p[1]}\n`;
-    });
+    for (let i = 0; i < top.length; i++) {
+      text += `${i + 1}. ${top[i][0]} → ${top[i][1]}\n`;
+    }
 
     return message.reply(text);
   }
