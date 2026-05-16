@@ -1,28 +1,48 @@
 const express = require("express");
-const { Client, GatewayIntentBits } = require("discord.js");
+const fs = require("fs");
+const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
 
 // 🐾 PETS
 const pets = require("./pets");
 
+// =========================
+// 📦 DATABASE
+// =========================
+
+const DB_FILE = "./db.json";
+
+function loadDB() {
+  if (!fs.existsSync(DB_FILE)) return {};
+  return JSON.parse(fs.readFileSync(DB_FILE));
+}
+
+function saveDB(db) {
+  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+}
+
+// =========================
 // 🧬 MUTAÇÕES DE PELE
+// =========================
+
 const mutacoesPele = {
-
-  "bloodroot": 2,
-  "candy": 3,
-  "lava": 6,
-  "galaxy": 7,
-  "radioativa": 7.5,
+  bloodroot: 2,
+  candy: 3,
+  lava: 6,
+  galaxy: 7,
+  radioativa: 7.5,
   "ying yang": 8.5,
-  "cursed": 9.5,
-  "divina": 10,
-  "cyber": 11,
-  "gold": 1.25,
-  "diamante": 1.75,
-  "rainbow": 10
-
+  cursed: 9.5,
+  divina: 10,
+  cyber: 11,
+  gold: 1.25,
+  diamante: 1.75,
+  rainbow: 10
 };
 
-// 🎭 MUTAÇÕES DE CORPO
+// =========================
+// 🎭 MUTAÇÕES DE CORPO (COMPLETA)
+// =========================
+
 const mutacoesCorpo = {
 
   "morango": 9,
@@ -72,7 +92,6 @@ const mutacoesCorpo = {
   "disco": 5,
   "glitchado": 5,
 
-  // 🔻 TIRAM 25%
   "garra de caranguejo": 0.75,
   "taco": 0.75,
 
@@ -87,20 +106,46 @@ const mutacoesCorpo = {
 
 };
 
+// =========================
+// 💰 CALCULO DE VALOR
+// =========================
+
+function getPetValue(nomeCompleto) {
+  let nome = nomeCompleto.toLowerCase();
+  let mult = 1;
+
+  for (let m in mutacoesPele) {
+    if (nome.includes(m)) {
+      mult *= mutacoesPele[m];
+      nome = nome.replace(m, "").trim();
+    }
+  }
+
+  for (let m in mutacoesCorpo) {
+    if (nome.includes(m)) {
+      mult *= mutacoesCorpo[m];
+      nome = nome.replace(m, "").trim();
+    }
+  }
+
+  const base = pets[nome];
+  if (!base) return -1;
+
+  return Math.floor(base * mult);
+}
+
+// =========================
 // 🌐 EXPRESS
+// =========================
+
 const app = express();
+app.get("/", (req, res) => res.send("Bot online"));
+app.listen(process.env.PORT || 3000);
 
-const PORT = process.env.PORT || 3000;
+// =========================
+// 🤖 DISCORD BOT
+// =========================
 
-app.get("/", (req, res) => {
-  res.send("Bot online");
-});
-
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
-
-// 🤖 CLIENTE DISCORD
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -109,154 +154,144 @@ const client = new Client({
   ]
 });
 
-// 🧠 CALCULAR VALOR COM MUTAÇÕES
-function getPetValue(nomeCompleto) {
+client.once("ready", () => {
+  console.log(`Bot online como ${client.user.tag}`);
+});
 
-  let nome = nomeCompleto.toLowerCase();
-
-  let multiplicador = 1;
-
-  // 🧬 PELE
-  for (let mutacao in mutacoesPele) {
-
-    if (nome.includes(mutacao)) {
-
-      multiplicador *= mutacoesPele[mutacao];
-
-      nome = nome.replace(mutacao, "").trim();
-    }
-  }
-
-  // 🎭 CORPO
-  for (let mutacao in mutacoesCorpo) {
-
-    if (nome.includes(mutacao)) {
-
-      multiplicador *= mutacoesCorpo[mutacao];
-
-      nome = nome.replace(mutacao, "").trim();
-    }
-  }
-
-  const valorBase = pets[nome];
-
-  if (!valorBase) return -1;
-
-  return Math.floor(valorBase * multiplicador);
-}
-
+// =========================
 // 📩 COMANDOS
-client.on("messageCreate", async (message) => {
+// =========================
 
+client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
-  // 📊 /avaliar
-  if (message.content.startsWith("/avaliar")) {
+  const db = loadDB();
 
-    const parts = message.content
-      .replace("/avaliar", "")
-      .trim()
-      .split(" vs ");
+  // 📦 ADD PET
+  if (message.content.startsWith("/addpet")) {
+    const args = message.content.split(" ").slice(1);
+
+    const pet = args[0]?.toLowerCase();
+    const qtd = parseInt(args[1] || "1");
+
+    if (!pet) return message.reply("Use: /addpet nome quantidade");
+
+    if (!db[message.author.id]) db[message.author.id] = {};
+    if (!db[message.author.id][pet]) db[message.author.id][pet] = 0;
+
+    db[message.author.id][pet] += qtd;
+
+    saveDB(db);
+
+    return message.reply(`✅ Adicionado ${qtd}x ${pet}`);
+  }
+
+  // 🔎 PROCURAR
+  if (message.content.startsWith("/procurar")) {
+    const pet = message.content.split(" ").slice(1).join(" ").toLowerCase();
+
+    if (!pet) return message.reply("Use: /procurar nome");
+
+    let encontrados = [];
+
+    for (let user in db) {
+      if (db[user][pet]) {
+        encontrados.push(`👤 <@${user}> → ${db[user][pet]}x`);
+      }
+    }
+
+    if (encontrados.length === 0) {
+      return message.reply("❌ Ninguém possui esse pet.");
+    }
+
+    return message.reply(`🔎 **${pet}**\n\n` + encontrados.join("\n"));
+  }
+
+  // 📦 MEUS PETS
+  if (message.content === "/meuspets") {
+    const user = db[message.author.id];
+
+    if (!user) return message.reply("Você não tem pets.");
+
+    let text = "📦 SEUS PETS:\n\n";
+
+    for (let p in user) {
+      text += `• ${p}: ${user[p]}x\n`;
+    }
+
+    return message.reply(text);
+  }
+
+  // 📊 AVALIAR
+  if (message.content.startsWith("/avaliar")) {
+    const parts = message.content.replace("/avaliar", "").trim().split(" vs ");
 
     if (parts.length !== 2) {
-
-      return message.reply(
-        "Use: /avaliar pet + pet vs pet + pet"
-      );
+      return message.reply("Use: /avaliar pet + pet vs pet + pet");
     }
 
-    const lado1 = parts[0]
-      .split("+")
-      .map(p => p.trim());
+    const lado1 = parts[0].split("+").map(p => p.trim());
+    const lado2 = parts[1].split("+").map(p => p.trim());
 
-    const lado2 = parts[1]
-      .split("+")
-      .map(p => p.trim());
+    let t1 = 0;
+    let t2 = 0;
 
-    let total1 = 0;
-    let total2 = 0;
-
-    // 🟢 SOMA LADO 1
     for (let p of lado1) {
-
-      const valor = getPetValue(p);
-
-      if (valor === -1) {
-
-        return message.reply(
-          `❌ Pet não encontrado: ${p}`
-        );
-      }
-
-      total1 += valor;
+      const v = getPetValue(p);
+      if (v === -1) return message.reply(`❌ Não existe: ${p}`);
+      t1 += v;
     }
 
-    // 🔵 SOMA LADO 2
     for (let p of lado2) {
-
-      const valor = getPetValue(p);
-
-      if (valor === -1) {
-
-        return message.reply(
-          `❌ Pet não encontrado: ${p}`
-        );
-      }
-
-      total2 += valor;
+      const v = getPetValue(p);
+      if (v === -1) return message.reply(`❌ Não existe: ${p}`);
+      t2 += v;
     }
 
-    // 📊 RESULTADO
-    let resultado = "FAIR ⚖️";
+    const diff = Math.abs(t1 - t2);
+    const media = (t1 + t2) / 2;
+    const percent = diff / media;
 
-    if (total2 > total1) {
-      resultado = "WIN 🟢";
+    let resultado = "";
+
+    if (percent <= 0.05) {
+      resultado = "⚖️ justa";
+    } else if (percent <= 0.15) {
+      resultado = t2 > t1 ? "🟠 Ganha um pouco" : "🔴 Perde um pouco";
+    } else {
+      resultado = t2 > t1 ? "❌️ Você sai ganhando" : "❌️ Você sai perdendo";
     }
 
-    else if (total2 < total1) {
-      resultado = "LOSE 🔴";
-    }
+    const embed = new EmbedBuilder()
+      .setTitle("📊 Trade Result")
+      .addFields(
+        { name: "Seu lado", value: `${parts[0]}\n💰 ${t1}`, inline: false },
+        { name: "Outro lado", value: `${parts[1]}\n💰 ${t2}`, inline: false },
+        { name: "Resultado", value: resultado, inline: false }
+      )
+      .setColor(0x00bfff);
 
-    return message.reply(
-
-      `📊 TRADE RESULTADO\n\n` +
-
-      `Seu lado:\n${parts[0]}\n💰 ${total1}\n\n` +
-
-      `Outro lado:\n${parts[1]}\n💰 ${total2}\n\n` +
-
-      `${resultado}`
-    );
+    return message.reply({ embeds: [embed] });
   }
 
-  // 📊 /painel
+  // 📊 PAINEL
   if (message.content === "/painel") {
-
-    const lista = Object.entries(pets)
+    const top = Object.entries(pets)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 20);
+      .slice(0, 10);
 
-    let texto =
-      "📊 TOP PETS MAIS VALIOSOS\n\n";
+    let text = "📊 TOP PETS\n\n";
 
-    for (let i = 0; i < lista.length; i++) {
+    top.forEach((p, i) => {
+      text += `${i + 1}. ${p[0]} → ${p[1]}\n`;
+    });
 
-      texto +=
-        `${i + 1}. ${lista[i][0]} = ${lista[i][1]}\n`;
-    }
-
-    return message.reply(texto);
+    return message.reply(text);
   }
-
 });
 
-// 🤖 ONLINE
-client.once("clientReady", () => {
+// =========================
+// LOGIN
+// =========================
 
-  console.log(
-    `Bot online como ${client.user.tag}`
-  );
-});
-
-// 🔑 LOGIN
 client.login(process.env.DISCORD_TOKEN);
