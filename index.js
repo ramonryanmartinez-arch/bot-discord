@@ -22,6 +22,71 @@ const mutacoesPele = {
 
 };
 
+// 🎭 MUTAÇÕES DE CORPO
+const mutacoesCorpo = {
+
+  "morango": 9,
+  "meowl": 8,
+  "john pork": 7.5,
+  "skibidi": 7,
+  "rena": 6,
+  "chocolate": 5.5,
+  "26": 6,
+  "halo": 6,
+  "sorte": 6,
+  "abóbora pet": 5.5,
+  "orelhas de coelho": 5.5,
+  "gorro de papai noel": 5,
+  "lápide rip": 4.5,
+  "hora da bruxa": 4,
+  "esqueleto": 4,
+  "10b": 4,
+  "balão laranja": 4,
+  "balão verde": 4.5,
+  "balão azul": 5,
+  "balão vermelho": 6,
+  "balão rosa": 6.5,
+  "balão arco-íris": 7.5,
+  "ovo laranja": 4,
+  "ovo verde": 5,
+  "ovo azul": 5.5,
+  "ovo rosa": 7.5,
+  "paint": 6,
+  "pintura": 6,
+  ":3": 5.5,
+  "gravata": 4.75,
+  "aranha": 4.5,
+  "chapéu matteo": 4.5,
+  "galáctico": 4,
+  "explosivo": 4,
+  "barbatana de tubarão": 4,
+  "brasil": 6,
+  "indonésia": 5,
+  "sombrero": 5,
+  "vovó": 6.5,
+  "fogo": 6,
+  "rosas": 6,
+  "fogos de artifício": 6,
+  "nyan": 6,
+  "relâmpago": 6,
+  "disco": 5,
+  "glitchado": 5,
+
+  // 🔻 TIRAM 25%
+  "garra de caranguejo": 0.75,
+  "taco": 0.75,
+
+  "zumbi": 5,
+  "chiclete": 4,
+  "bubblegum": 4,
+  "ovni": 3,
+  "sonolento": 0.5,
+  "atingido por cometa": 3.5,
+  "neve": 3,
+  "molhado": 2.5
+
+};
+
 // 🌐 EXPRESS
 const app = express();
 
@@ -44,26 +109,36 @@ const client = new Client({
   ]
 });
 
-// 🧠 PEGA VALOR COM MUTAÇÃO
+// 🧠 CALCULAR VALOR COM MUTAÇÕES
 function getPetValue(nomeCompleto) {
 
-  const nomeLower = nomeCompleto.toLowerCase();
+  let nome = nomeCompleto.toLowerCase();
 
   let multiplicador = 1;
 
-  let nomePet = nomeLower;
-
+  // 🧬 PELE
   for (let mutacao in mutacoesPele) {
 
-    if (nomeLower.includes(mutacao)) {
+    if (nome.includes(mutacao)) {
 
-      multiplicador = mutacoesPele[mutacao];
+      multiplicador *= mutacoesPele[mutacao];
 
-      nomePet = nomeLower.replace(mutacao, "").trim();
+      nome = nome.replace(mutacao, "").trim();
     }
   }
 
-  const valorBase = pets[nomePet];
+  // 🎭 CORPO
+  for (let mutacao in mutacoesCorpo) {
+
+    if (nome.includes(mutacao)) {
+
+      multiplicador *= mutacoesCorpo[mutacao];
+
+      nome = nome.replace(mutacao, "").trim();
+    }
+  }
+
+  const valorBase = pets[nome];
 
   if (!valorBase) return -1;
 
@@ -131,7 +206,7 @@ client.on("messageCreate", async (message) => {
       total2 += valor;
     }
 
-    // 🧠 RESULTADO
+    // 📊 RESULTADO
     let resultado = "FAIR ⚖️";
 
     if (total2 > total1) {
@@ -142,7 +217,6 @@ client.on("messageCreate", async (message) => {
       resultado = "LOSE 🔴";
     }
 
-    // 📤 RESPOSTA
     return message.reply(
 
       `📊 TRADE RESULTADO\n\n` +
