@@ -1,8 +1,22 @@
+const express = require("express");
 const { Client, GatewayIntentBits } = require("discord.js");
 
-// 🐾 IMPORTA A “ABA DE PETS”
+// 🐾 PETS
 const pets = require("./pets");
 
+// 🌐 EXPRESS (resolve erro do Render)
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get("/", (req, res) => {
+  res.send("Bot online");
+});
+
+app.listen(PORT, () => {
+  console.log("Servidor rodando na porta " + PORT);
+});
+
+// 🤖 DISCORD BOT
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -11,7 +25,7 @@ const client = new Client({
   ]
 });
 
-// 🧠 pega valor do pet
+// 🧠 pegar valor do pet
 function getPetValue(name) {
   return pets[name.toLowerCase().trim()] || -1;
 }
@@ -19,7 +33,6 @@ function getPetValue(name) {
 // 📊 COMANDO /avaliar
 client.on("messageCreate", (message) => {
   if (message.author.bot) return;
-
   if (!message.content.startsWith("/avaliar")) return;
 
   const parts = message.content
@@ -67,5 +80,5 @@ client.once("ready", () => {
   console.log(`Bot online como ${client.user.tag}`);
 });
 
-// 🔑 TOKEN
+// 🔑 TOKEN (Render)
 client.login(process.env.DISCORD_TOKEN);
