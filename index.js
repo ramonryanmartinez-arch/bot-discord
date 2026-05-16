@@ -1,11 +1,12 @@
 const express = require("express");
 const { Client, GatewayIntentBits } = require("discord.js");
 
-// 🐾 PETS
+// 🐾 IMPORTAR PETS
 const pets = require("./pets");
 
-// 🌐 EXPRESS (resolve erro do Render)
+// 🌐 EXPRESS (Render precisa disso)
 const app = express();
+
 const PORT = process.env.PORT || 3000;
 
 app.get("/", (req, res) => {
@@ -13,10 +14,10 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log("Servidor rodando na porta " + PORT);
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
 
-// 🤖 DISCORD BOT
+// 🤖 CLIENTE DISCORD
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -25,7 +26,7 @@ const client = new Client({
   ]
 });
 
-// 🧠 pegar valor do pet
+// 🧠 PEGAR VALOR DO PET
 function getPetValue(name) {
   return pets[name.toLowerCase().trim()] || -1;
 }
@@ -33,6 +34,7 @@ function getPetValue(name) {
 // 📊 COMANDO /avaliar
 client.on("messageCreate", (message) => {
   if (message.author.bot) return;
+
   if (!message.content.startsWith("/avaliar")) return;
 
   const parts = message.content
@@ -41,7 +43,9 @@ client.on("messageCreate", (message) => {
     .split(" vs ");
 
   if (parts.length !== 2) {
-    return message.reply("Use: /avaliar pet + pet vs pet + pet");
+    return message.reply(
+      "Use: /avaliar pet + pet vs pet + pet"
+    );
   }
 
   const lado1 = parts[0].split("+").map(p => p.trim());
@@ -51,34 +55,64 @@ client.on("messageCreate", (message) => {
   let total2 = 0;
 
   for (let p of lado1) {
-    let v = getPetValue(p);
-    if (v === -1) return message.reply(`❌ Pet não encontrado: ${p}`);
-    total1 += v;
+    let valor = getPetValue(p);
+
+    if (valor === -1) {
+      return message.reply(`❌ Pet não encontrado: ${p}`);
+    }
+
+    total1 += valor;
   }
 
   for (let p of lado2) {
-    let v = getPetValue(p);
-    if (v === -1) return message.reply(`❌ Pet não encontrado: ${p}`);
-    total2 += v;
+    let valor = getPetValue(p);
+
+    if (valor === -1) {
+      return message.reply(`❌ Pet não encontrado: ${p}`);
+    }
+
+    total2 += valor;
   }
 
-  let result =
-    total2 > total1 ? "WIN 🟢" :
-    total2 < total1 ? "LOSE 🔴" :
-    "FAIR ⚖️";
+  let resultado =
+    total2 > total1
+      ? "WIN 🟢"
+      : total2 < total1
+      ? "LOSE 🔴"
+      : "FAIR ⚖️";
 
   message.reply(
     `📊 TRADE RESULTADO\n\n` +
     `Seu lado: ${parts[0]} = ${total1}\n` +
     `Outro lado: ${parts[1]} = ${total2}\n\n` +
-    `${result}`
+    `${resultado}`
   );
 });
 
-// 🤖 ONLINE
-client.once("ready", () => {
+// 📊 COMANDO /painel
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+
+  if (message.content === "/painel") {
+
+    const lista = Object.entries(pets)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20);
+
+    let texto = "📊 TOP PETS MAIS VALIOSOS\n\n";
+
+    for (let i = 0; i < lista.length; i++) {
+      texto += `${i + 1}. ${lista[i][0]} = ${lista[i][1]}\n`;
+    }
+
+    message.reply(texto);
+  }
+});
+
+// 🤖 BOT ONLINE
+client.once("clientReady", () => {
   console.log(`Bot online como ${client.user.tag}`);
 });
 
-// 🔑 TOKEN (Render)
-client.login(process.env.DISCORD_TOKEN);
+// 🔑 TOKEN
+client.login(process.env.DISCORD_TOKEN);N);
