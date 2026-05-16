@@ -102,7 +102,7 @@ client.on("messageCreate", (message) => {
   }
 
   // 📊 /painel
-  if (message.content === "/painel do 7") {
+  if (message.content === "/paineldo7") {
 
     const lista = Object.entries(pets)
       .sort((a, b) => b[1] - a[1])
