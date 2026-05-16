@@ -1,10 +1,8 @@
 const express = require("express");
 const { Client, GatewayIntentBits } = require("discord.js");
 
-// 🐾 IMPORTAR PETS
 const pets = require("./pets");
 
-// 🌐 EXPRESS (Render precisa disso)
 const app = express();
 
 const PORT = process.env.PORT || 3000;
@@ -17,7 +15,6 @@ app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
 
-// 🤖 CLIENTE DISCORD
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -26,73 +23,77 @@ const client = new Client({
   ]
 });
 
-// 🧠 PEGAR VALOR DO PET
 function getPetValue(name) {
   return pets[name.toLowerCase().trim()] || -1;
 }
 
-// 📊 COMANDO /avaliar
 client.on("messageCreate", (message) => {
+
   if (message.author.bot) return;
 
-  if (!message.content.startsWith("/avaliar")) return;
+  // 📊 /avaliar
+  if (message.content.startsWith("/avaliar")) {
 
-  const parts = message.content
-    .replace("/avaliar", "")
-    .trim()
-    .split(" vs ");
+    const parts = message.content
+      .replace("/avaliar", "")
+      .trim()
+      .split(" vs ");
 
-  if (parts.length !== 2) {
+    if (parts.length !== 2) {
+      return message.reply(
+        "Use: /avaliar pet + pet vs pet + pet"
+      );
+    }
+
+    const lado1 = parts[0]
+      .split("+")
+      .map(p => p.trim());
+
+    const lado2 = parts[1]
+      .split("+")
+      .map(p => p.trim());
+
+    let total1 = 0;
+    let total2 = 0;
+
+    for (let p of lado1) {
+
+      let valor = getPetValue(p);
+
+      if (valor === -1) {
+        return message.reply(`❌ Pet não encontrado: ${p}`);
+      }
+
+      total1 += valor;
+    }
+
+    for (let p of lado2) {
+
+      let valor = getPetValue(p);
+
+      if (valor === -1) {
+        return message.reply(`❌ Pet não encontrado: ${p}`);
+      }
+
+      total2 += valor;
+    }
+
+    let resultado =
+      total2 > total1
+        ? "WIN 🟢"
+        : total2 < total1
+        ? "LOSE 🔴"
+        : "FAIR ⚖️";
+
     return message.reply(
-      "Use: /avaliar pet + pet vs pet + pet"
+      `📊 TRADE RESULTADO\n\n` +
+      `Seu lado: ${parts[0]} = ${total1}\n` +
+      `Outro lado: ${parts[1]} = ${total2}\n\n` +
+      `${resultado}`
     );
   }
 
-  const lado1 = parts[0].split("+").map(p => p.trim());
-  const lado2 = parts[1].split("+").map(p => p.trim());
-
-  let total1 = 0;
-  let total2 = 0;
-
-  for (let p of lado1) {
-    let valor = getPetValue(p);
-
-    if (valor === -1) {
-      return message.reply(`❌ Pet não encontrado: ${p}`);
-    }
-
-    total1 += valor;
-  }
-
-  for (let p of lado2) {
-    let valor = getPetValue(p);
-
-    if (valor === -1) {
-      return message.reply(`❌ Pet não encontrado: ${p}`);
-    }
-
-    total2 += valor;
-  }
-
-  let resultado =
-    total2 > total1
-      ? "WIN 🟢"
-      : total2 < total1
-      ? "LOSE 🔴"
-      : "FAIR ⚖️";
-
-  message.reply(
-    `📊 TRADE RESULTADO\n\n` +
-    `Seu lado: ${parts[0]} = ${total1}\n` +
-    `Outro lado: ${parts[1]} = ${total2}\n\n` +
-    `${resultado}`
-  );
-});
-
-// 📊 COMANDO /painel
-client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
-
+  // 📊 /painel
   if (message.content === "/painel") {
 
     const lista = Object.entries(pets)
@@ -102,17 +103,19 @@ client.on("messageCreate", async (message) => {
     let texto = "📊 TOP PETS MAIS VALIOSOS\n\n";
 
     for (let i = 0; i < lista.length; i++) {
-      texto += `${i + 1}. ${lista[i][0]} = ${lista[i][1]}\n`;
+
+      texto +=
+        `${i + 1}. ${lista[i][0]} = ${lista[i][1]}\n`;
+
     }
 
-    message.reply(texto);
+    return message.reply(texto);
   }
+
 });
 
-// 🤖 BOT ONLINE
 client.once("clientReady", () => {
   console.log(`Bot online como ${client.user.tag}`);
 });
 
-// 🔑 TOKEN
-client.login(process.env.DISCORD_TOKEN);N);
+client.login(process.env.DISCORD_TOKEN);
